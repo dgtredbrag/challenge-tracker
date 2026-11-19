@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f5f3ec">
+<meta name="description" content="Челлендж-трекер — маленькие шаги к большим изменениям.">
+<link rel="manifest" href="manifest.webmanifest">
+<title>Шаг за шагом</title>
+<style>
+:root{--bg:#f5f3ec;--paper:#fffefa;--ink:#27332d;--muted:#7c877e;--line:#e7e6dc;--green:#66866d;--green2:#e5eee4;--orange:#e9a45b;--red:#c97970;--shadow:0 8px 28px #29372b12}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,ui-rounded,system-ui,-apple-system,"Segoe UI",sans-serif;padding-bottom:88px}
+button,input,textarea,select{font:inherit}button{cursor:pointer;border:0}
+.app{max-width:760px;margin:auto;padding:env(safe-area-inset-top) 18px 24px}
+header{display:flex;align-items:center;justify-content:space-between;padding:20px 0 16px}
+.brand{font-weight:850;font-size:21px;letter-spacing:-.7px}.brand span{color:var(--green)}
+.avatar{width:38px;height:38px;border-radius:50%;background:#e6e9dc;display:grid;place-items:center;font-size:18px}
+h1{font-size:29px;line-height:1.15;letter-spacing:-1px;margin:14px 0 8px}h2{font-size:20px;letter-spacing:-.5px;margin:0 0 14px}h3{font-size:16px;margin:0 0 8px}
+.sub{color:var(--muted);font-size:14px;line-height:1.5;margin:0 0 20px}
+.tabs{display:flex;gap:8px;overflow:auto;padding:5px 0 16px;scrollbar-width:none}.tab{white-space:nowrap;background:transparent;color:var(--muted);padding:10px 14px;border-radius:14px;font-size:13px;font-weight:650}.tab.active{background:var(--ink);color:white}
+.screen{display:none}.screen.active{display:block}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:21px;padding:17px;margin:0 0 13px;box-shadow:var(--shadow)}
+.hero{background:#e7eee4;border:0;padding:21px;position:relative;overflow:hidden}.hero:after{content:"✳";position:absolute;right:15px;top:8px;font-size:64px;color:#c6d8c4;transform:rotate(15deg)}
+.eyebrow{font-size:11px;text-transform:uppercase;letter-spacing:1.3px;color:var(--muted);font-weight:800;margin-bottom:8px}
+.hero h2{font-size:23px;max-width:80%;line-height:1.18;margin-bottom:8px}.hero p{color:#65756a;font-size:13px;max-width:78%;line-height:1.5}
+.btn{padding:13px 17px;border-radius:14px;background:var(--green);color:white;font-weight:750;font-size:14px}.btn.dark{background:var(--ink)}.btn.light{background:var(--green2);color:var(--ink)}.btn.ghost{background:transparent;color:var(--green);padding:8px 0}.btn.small{padding:9px 12px;font-size:12px}
+.row{display:flex;align-items:center;justify-content:space-between;gap:12px}.muted{color:var(--muted)}.tiny{font-size:12px;color:var(--muted)}
+.progress{height:8px;background:#e9ebe3;border-radius:99px;overflow:hidden;margin:12px 0 7px}.progress>i{display:block;height:100%;background:var(--green);border-radius:99px;transition:width .25s}
+.challenge-title{font-weight:800;font-size:17px;margin-bottom:5px}.pill{font-size:11px;padding:5px 9px;border-radius:99px;background:var(--green2);color:#4e7055;font-weight:750}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:14px}.stat{background:#f5f5ef;border-radius:14px;padding:11px}.stat strong{display:block;font-size:21px}.stat span{font-size:10px;color:var(--muted)}
+.day-actions{display:flex;gap:9px;margin-top:14px}.day-actions button{flex:1}
+.calendar{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-top:13px}.weekday{text-align:center;color:var(--muted);font-size:10px;padding-bottom:4px}.day{aspect-ratio:1;border-radius:10px;background:#f0f0e9;color:#879087;font-size:12px;font-weight:700;display:grid;place-items:center}.day.done{background:#6e9275;color:white}.day.missed{background:#f3dfd9;color:#a95d52}.day.today{outline:2px solid var(--orange);outline-offset:1px}.day.future{opacity:.35}
+.field{margin:13px 0}.field label{display:block;font-size:12px;font-weight:750;margin-bottom:7px}.field input,.field textarea,.field select{width:100%;border:1px solid var(--line);border-radius:13px;background:#fff;padding:12px;color:var(--ink);outline:none}.field textarea{min-height:76px;resize:vertical}.field input:focus,.field textarea:focus{border-color:var(--green)}
+.choice{display:flex;gap:8px}.choice button{flex:1;border:1px solid var(--line);background:#fff;border-radius:13px;padding:12px 8px;color:var(--muted);font-size:12px;font-weight:700}.choice button.selected{background:var(--green2);border-color:#a9c0aa;color:#426249}
+.empty{text-align:center;padding:35px 20px}.empty .emoji{font-size:38px;margin-bottom:12px}.empty p{color:var(--muted);font-size:13px;line-height:1.5}
+.bottom{position:fixed;bottom:0;left:0;right:0;background:#fffefaed;backdrop-filter:blur(14px);border-top:1px solid var(--line);padding:10px 18px calc(10px + env(safe-area-inset-bottom));z-index:5}.bottom-inner{max-width:760px;margin:auto;display:flex;justify-content:space-around}.nav{background:none;color:var(--muted);font-size:10px;display:grid;gap:3px;justify-items:center;min-width:55px}.nav b{font-size:19px}.nav.active{color:var(--green);font-weight:800}
+.modal{position:fixed;inset:0;background:#17221db3;z-index:10;display:none;align-items:flex-end;justify-content:center;padding:14px}.modal.open{display:flex}.sheet{background:var(--paper);border-radius:24px 24px 18px 18px;width:min(100%,650px);max-height:92vh;overflow:auto;padding:20px}.sheet-head{display:flex;justify-content:space-between;align-items:center}.close{background:#f0f0e9;border-radius:50%;width:34px;height:34px;font-size:19px}
+.photo-preview{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}.photo-preview img{width:76px;height:76px;object-fit:cover;border-radius:12px}
+.mood{display:flex;gap:8px}.mood button{background:#f3f2eb;border-radius:12px;padding:9px;font-size:22px}.mood button.selected{background:#e4eee2;outline:2px solid #a9c0aa}
+.week{border-left:3px solid #dbe7d8;padding:3px 0 3px 13px;margin:14px 0}.week p{font-size:13px;line-height:1.5;margin:6px 0}
+.footer-note{text-align:center;color:var(--muted);font-size:11px;margin:22px 0}
+@media(min-width:600px){.app{padding-left:26px;padding-right:26px}.modal{align-items:center}.sheet{border-radius:24px}}
+</style>
+</head>
+<body>
+<div class="app">
+<header><div class="brand">шаг<span>.</span> за шагом</div><div class="avatar">🌱</div></header>
+<div class="tabs">
+<button class="tab active" data-screen="today">Сегодня</button>
+<button class="tab" data-screen="challenges">Мои челленджи</button>
+<button class="tab" data-screen="journal">Рефлексии</button>
+<button class="tab" data-screen="stats">Итоги</button>
+</div>
+<section id="today" class="screen active">
+<div class="hero card"><div class="eyebrow">Твой маленький шаг</div><h2>Большие перемены начинаются не с понедельника.</h2><p>Не нужно быть идеальным. Достаточно возвращаться к тому, что важно.</p><button class="btn dark" onclick="openCreate()">＋ Новый челлендж</button></div>
+<div id="todayContent"></div>
+<h2 style="margin-top:22px">Активные челленджи</h2><div id="todayList"></div>
+</section>
+<section id="challenges" class="screen">
+<div class="row"><div><h1>Мои челленджи</h1><p class="sub">Каждый из них — обещание себе.</p></div><button class="btn small" onclick="openCreate()">＋ Создать</button></div>
+<div id="challengeList"></div>
+</section>
+<section id="journal" class="screen">
+<h1>Рефлексии</h1><p class="sub">Остановиться, заметить, что происходит, и поддержать себя.</p>
+<div id="journalContent"></div>
+</section>
+<section id="stats" class="screen">
+<h1>Твой путь</h1><p class="sub">Здесь не оценки, а свидетельства того, что ты пробовал(а).</p>
+<div id="statsContent"></div>
+</section>
+</div>
+<nav class="bottom"><div class="bottom-inner">
+<button class="nav active" data-screen="today"><b>⌂</b>Сегодня</button>
+<button class="nav" data-screen="challenges"><b>◷</b>Челленджи</button>
+<button class="nav" data-screen="journal"><b>✎</b>Записи</button>
+<button class="nav" data-screen="stats"><b>✳</b>Итоги</button>
+</div></nav>
+
+<div class="modal" id="createModal"><div class="sheet">
+<div class="sheet-head"><h2>Новый челлендж</h2><button class="close" onclick="closeModal('createModal')">×</button></div>
+<div class="field"><label>Какую цель выбираешь?</label><div class="choice"><button class="selected" data-type="do" onclick="setType('do')">✓ Делать действие</button><button data-type="avoid" onclick="setType('avoid')">↗ Не делать действие</button></div></div>
+<div class="field"><label>Опиши цель · до 200 символов</label><input id="goal" maxlength="200" placeholder="Например: гулять не менее 30 минут"></div>
+<div class="field"><label>Продолжительность</label><select id="duration"><option>20</option><option selected>30</option><option>60</option><option>75</option><option>100</option><option>180</option><option>365</option></select></div>
+<div class="field"><label>Мой приз · необязательно</label><input id="prize" maxlength="250" placeholder="Что я подарю себе после финиша?"></div>
+<div class="field"><label>Зачем мне это? · необязательно</label><textarea id="reason" maxlength="500" placeholder="Моя личная причина..."></textarea></div>
+<button class="btn" style="width:100%" onclick="createChallenge()">Создать челлендж</button>
+</div></div>
+
+<div class="modal" id="dayModal"><div class="sheet">
+<div class="sheet-head"><h2 id="dayTitle">Запись дня</h2><button class="close" onclick="closeModal('dayModal')">×</button></div>
+<div class="field"><label>Как прошёл день?</label><div class="choice"><button id="dayDone" onclick="setDayStatus(true)">✓ Выполнено</button><button id="dayMissed" onclick="setDayStatus(false)">— Не выполнено</button></div></div>
+<div class="field"><label>Подпись · до 150 символов</label><input id="dayCaption" maxlength="150" placeholder="Что хочется запомнить?"></div>
+<div class="field"><label>Как ощущения на данный момент? · до 300 символов</label><textarea id="dayFeeling" maxlength="300" placeholder="Без правильных и неправильных ответов..."></textarea></div>
+<div class="field"><label>Фотография · до 1 файла</label><input id="dayPhoto" type="file" accept="image/*"><div id="dayPhotoPreview" class="photo-preview"></div></div>
+<button class="btn" style="width:100%" onclick="saveDay()">Сохранить день</button>
+</div></div>
+
+<div class="modal" id="weekModal"><div class="sheet">
+<div class="sheet-head"><h2>Еженедельная рефлексия</h2><button class="close" onclick="closeModal('weekModal')">×</button></div>
+<div class="field"><label>Что получилось?</label><textarea id="weekGood" maxlength="1000" placeholder="Даже маленькие победы имеют значение..."></textarea></div>
+<div class="field"><label>Что не получилось?</label><textarea id="weekHard" maxlength="1000" placeholder="Без самокритики — просто факты..."></textarea></div>
+<div class="field"><label>Какие выводы?</label><textarea id="weekLearn" maxlength="1000" placeholder="Что я понял(а) за эту неделю?"></textarea></div>
+<div class="field"><label>Настроение</label><div class="mood" id="moodPicker"><button onclick="setMood(1)">😞</button><button onclick="setMood(2)">😕</button><button onclick="setMood(3)">😐</button><button onclick="setMood(4)">🙂</button><button onclick="setMood(5)">😊</button></div></div>
+<div class="field"><label>Фотографии · до 3 файлов</label><input id="weekPhotos" type="file" accept="image/*" multiple><div id="weekPhotoPreview" class="photo-preview"></div></div>
+<button class="btn" style="width:100%" onclick="saveWeek()">Сохранить рефлексию</button>
+</div></div>
+
+<div class="modal" id="finishModal"><div class="sheet">
+<div class="sheet-head"><h2>Финишная прямая ✨</h2><button class="close" onclick="closeModal('finishModal')">×</button></div>
+<p class="sub">Ты дошёл(ла) до конца выбранного срока. Это уже повод остановиться и заметить свой путь.</p>
+<div class="field"><label>Что я хочу сказать себе?</label><textarea id="finishNote" maxlength="1000" placeholder="Мои итоги, мысли и чувства..."></textarea></div>
+<button class="btn" style="width:100%" onclick="finishChallenge()">Завершить челлендж</button>
+</div></div>
+<script>
+const KEY='stepByStepChallengesV1';
+let data=JSON.parse(localStorage.getItem(KEY)||'{"challenges":[]}'), currentId=null,currentDay=null,challengeType='do',dayStatus=true,mood=0,dayPhotoData=null,weekPhotoData=[];
+const todayISO=()=>{let d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`};
+const dateAdd=(s,n)=>{let d=new Date(s+'T12:00:00');d.setDate(d.getDate()+n);return d.toISOString().slice(0,10)};
+const fmt=s=>new Date(s+'T12:00:00').toLocaleDateString('ru-RU',{day:'numeric',month:'short',year:'numeric'});
+const save=()=>localStorage.setItem(KEY,JSON.stringify(data));
+const esc=s=>String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const getC=id=>data.challenges.find(c=>c.id===id);
+const daysDone=c=>Object.values(c.days||{}).filter(d=>d.status==='done').length;
+const elapsed=c=>Math.max(0,Math.min(c.duration,Math.floor((new Date(todayISO()+'T12:00:00')-new Date(c.start+'T12:00:00'))/86400000)+1));
+const percent=c=>Math.round(daysDone(c)/c.duration*100);
+function streak(c){let n=0;for(let i=elapsed(c)-1;i>=0;i--){let d=c.days[dateAdd(c.start,i)];if(d&&d.status==='done')n++;else if(i!==elapsed(c)-1)break;else break}return n}
+function setType(t){challengeType=t;document.querySelectorAll('[data-type]').forEach(b=>b.classList.toggle('selected',b.dataset.type===t))}
+function openCreate(){document.getElementById('createModal').classList.add('open')}
+function closeModal(id){document.getElementById(id).classList.remove('open')}
+function createChallenge(){let goal=document.getElementById('goal').value.trim();if(!goal){alert('Добавь описание цели.');return}
+let c={id:crypto.randomUUID?crypto.randomUUID():String(Date.now()),type:challengeType,goal,duration:+document.getElementById('duration').value,prize:document.getElementById('prize').value.trim(),reason:document.getElementById('reason').value.trim(),start:todayISO(),days:{},weeks:[],status:'active'};
+data.challenges.unshift(c);save();['goal','prize','reason'].forEach(id=>document.getElementById(id).value='');closeModal('createModal');render();showScreen('challenges')}
+function showScreen(name){document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('active',s.id===name));document.querySelectorAll('[data-screen]').forEach(b=>b.classList.toggle('active',b.dataset.screen===name));render()}
+document.querySelectorAll('[data-screen]').forEach(b=>b.addEventListener('click',()=>showScreen(b.dataset.screen)));
+function challengeCard(c){let p=percent(c),left=Math.max(0,c.duration-elapsed(c));return `<div class="card"><div class="row"><span class="pill">${c.type==='do'?'Делать':'Не делать'} · ${c.duration} дней</span><span class="tiny">${c.status==='finished'?'Завершён':`Финиш ${fmt(dateAdd(c.start,c.duration-1))}`}</span></div><div class="challenge-title" style="margin-top:10px">${esc(c.goal)}</div><div class="progress"><i style="width:${p}%"></i></div><div class="row tiny"><span>${daysDone(c)} из ${c.duration} выполнено · ${p}%</span><span>${c.status==='finished'?'Готово':`Осталось ${left} дн.`}</span></div><div class="stats"><div class="stat"><strong>${streak(c)} 🔥</strong><span>серия сейчас</span></div><div class="stat"><strong>${Object.values(c.days).filter(d=>d.status==='missed').length}</strong><span>прерванных дней</span></div><div class="stat"><strong>${c.weeks.length}</strong><span>рефлексий</span></div></div><div class="day-actions"><button class="btn light" onclick="openChallenge('${c.id}')">Открыть календарь</button>${c.status==='active'?`<button class="btn" onclick="openWeek('${c.id}')">Рефлексия</button>`:''}</div></div>`}
+function render(){let active=data.challenges.filter(c=>c.status==='active'),all=data.challenges;
+let today=document.getElementById('todayContent');if(!active.length){today.innerHTML=`<div class="card empty"><div class="emoji">🌿</div><h3>Здесь начинается твоя история</h3><p>Создай первый челлендж — выбери то, что действительно важно именно тебе.</p><button class="btn" onclick="openCreate()">Создать первый челлендж</button></div>`}else{let c=active[0],idx=elapsed(c)-1,day=dateAdd(c.start,Math.max(0,idx)),entry=c.days[day];today.innerHTML=`<div class="card"><div class="eyebrow">Твой фокус сегодня</div><div class="challenge-title">${esc(c.goal)}</div><div class="tiny">${fmt(day)} · день ${Math.max(1,idx+1)} из ${c.duration}</div><div class="progress"><i style="width:${percent(c)}%"></i></div><div class="row tiny"><span>${percent(c)}% пути</span><span>${streak(c)} дней подряд 🔥</span></div><div class="day-actions"><button class="btn" onclick="openDay('${c.id}','${day}')">${entry?'Изменить отметку':'Отметить день'}</button><button class="btn light" onclick="openWeek('${c.id}')">＋ Рефлексия</button></div></div>`}
+document.getElementById('todayList').innerHTML=active.length?active.map(challengeCard).join(''):'<p class="tiny">Активных челленджей пока нет.</p>';
+document.getElementById('challengeList').innerHTML=all.length?all.map(c=>challengeCard(c)).join(''):`<div class="card empty"><div class="emoji">🪴</div><h3>Пока нет челленджей</h3><p>Выбери одну небольшую цель, с которой хочется начать.</p><button class="btn" onclick="openCreate()">Создать челлендж</button></div>`;
+let weeks=[];all.forEach(c=>c.weeks.forEach(w=>weeks.push({c,w})));weeks.sort((a,b)=>b.w.date.localeCompare(a.w.date));
+document.getElementById('journalContent').innerHTML=weeks.length?weeks.map(({c,w})=>`<div class="card"><div class="row"><b>${esc(c.goal)}</b><span class="tiny">${fmt(w.date)}</span></div><div class="week"><p><b>Получилось:</b> ${esc(w.good)}</p><p><b>Не получилось:</b> ${esc(w.hard)}</p><p><b>Выводы:</b> ${esc(w.learn)}</p><p>${w.mood?['','😞','😕','😐','🙂','😊'][w.mood]+' Настроение':''}</p>${(w.photos||[]).map(p=>`<img src="${p}" style="width:65px;height:65px;object-fit:cover;border-radius:10px;margin:3px">`).join('')}</div></div>`).join(''):'<div class="card empty"><div class="emoji">✍️</div><h3>Здесь будут твои заметки</h3><p>Раз в неделю возвращайся к своим ощущениям и наблюдениям.</p></div>';
+let done=all.reduce((s,c)=>s+daysDone(c),0),finished=all.filter(c=>c.status==='finished').length,moods=weeks.map(x=>x.w.mood).filter(Boolean),avg=moods.length?(moods.reduce((a,b)=>a+b,0)/moods.length).toFixed(1):'—';
+document.getElementById('statsContent').innerHTML=`<div class="card"><div class="stats"><div class="stat"><strong>${all.length}</strong><span>всего челленджей</span></div><div class="stat"><strong>${done}</strong><span>дней выполнено</span></div><div class="stat"><strong>${finished}</strong><span>завершено</span></div></div><div class="row" style="margin-top:18px"><span class="muted">Средняя оценка настроения</span><b>${avg}${avg!=='—'?'/5':''}</b></div><p class="tiny">Оценка рассчитывается по настроению в еженедельных рефлексиях.</p></div>`+all.map(c=>`<div class="card"><div class="row"><b>${esc(c.goal)}</b><span class="pill">${c.status==='finished'?'Завершён':'В процессе'}</span></div><div class="progress"><i style="width:${percent(c)}%"></i></div><div class="tiny">${daysDone(c)} выполнено · ${Object.values(c.days).filter(d=>d.status==='missed').length} прервано · ${c.weeks.length} рефлексий</div>${c.status==='finished'?`<p style="font-size:13px">${esc(c.finishNote||'') }</p><p class="tiny">Приз: ${esc(c.prize||'не указан')}</p>`:''}</div>`).join('');
+}
+function openChallenge(id){currentId=id;let c=getC(id);let start=new Date(c.start+'T12:00:00'),offset=(start.getDay()+6)%7;let html=`<div class="card"><div class="row"><span class="pill">${c.duration} дней</span><span class="tiny">Начало ${fmt(c.start)}</span></div><h2 style="margin-top:10px">${esc(c.goal)}</h2><div class="progress"><i style="width:${percent(c)}%"></i></div><div class="tiny">${percent(c)}% · ${daysDone(c)} выполнено · серия ${streak(c)} 🔥</div><div class="calendar">${['Пн','Вт','Ср','Чт','Пт','Сб','Вс'].map(x=>`<div class="weekday">${x}</div>`).join('')}${Array(offset).fill('<div></div>').join('')}${Array.from({length:c.duration},(_,i)=>{let d=dateAdd(c.start,i),entry=c.days[d],cls=entry?.status==='done'?'done':entry?.status==='missed'?'missed':i>=elapsed(c)?'future':'';return `<button class="day ${cls} ${d===todayISO()?'today':''}" onclick="openDay('${c.id}','${d}')">${i+1}</button>`}).join('')}</div><p class="tiny" style="margin-top:12px">Нажми на день, чтобы добавить отметку, фото и заметку.</p></div>`+
+(c.reason?`<div class="card"><div class="eyebrow">Зачем мне это?</div>${esc(c.reason)}</div>`:'')+(c.prize?`<div class="card"><div class="eyebrow">Мой приз</div>🎁 ${esc(c.prize)}</div>`:'')+
+`<div class="row" style="margin:15px 2px"><button class="btn light" onclick="openWeek('${c.id}')">＋ Еженедельная рефлексия</button>${c.status==='active'&&elapsed(c)>=c.duration?`<button class="btn" onclick="openFinish('${c.id}')">Подвести итоги</button>`:''}</div>`;
+let wrap=document.createElement('div');wrap.className='modal open';wrap.id='detailModal';wrap.innerHTML=`<div class="sheet"><div class="sheet-head"><h2>Календарь прогресса</h2><button class="close" onclick="closeModal('detailModal')">×</button></div>${html}</div>`;document.body.appendChild(wrap)}
+function openDay(id,date){currentId=id;currentDay=date;let e=getC(id).days[date]||{};dayStatus=e.status!=='missed';document.getElementById('dayTitle').textContent=`${fmt(date)} · отметка дня`;document.getElementById('dayCaption').value=e.caption||'';document.getElementById('dayFeeling').value=e.feeling||'';dayPhotoData=e.photo||null;document.getElementById('dayPhoto').value='';document.getElementById('dayPhotoPreview').innerHTML=dayPhotoData?`<img src="${dayPhotoData}">`:'';updateDayButtons();document.getElementById('dayModal').classList.add('open')}
+function setDayStatus(v){dayStatus=v;updateDayButtons()}function updateDayButtons(){document.getElementById('dayDone').classList.toggle('selected',dayStatus);document.getElementById('dayMissed').classList.toggle('selected',!dayStatus)}
+document.getElementById('dayPhoto').addEventListener('change',e=>readFiles(e.target.files,1,arr=>{dayPhotoData=arr[0]||null;document.getElementById('dayPhotoPreview').innerHTML=dayPhotoData?`<img src="${dayPhotoData}">`:''}));
+function readFiles(files,max,cb){let list=[...files].slice(0,max);Promise.all(list.map(f=>new Promise(resolve=>{let r=new FileReader();r.onload=()=>resolve(r.result);r.readAsDataURL(f)}))).then(cb)}
+function saveDay(){let c=getC(currentId);c.days[currentDay]={status:dayStatus?'done':'missed',caption:document.getElementById('dayCaption').value.trim(),feeling:document.getElementById('dayFeeling').value.trim(),photo:dayPhotoData};save();closeModal('dayModal');let d=document.getElementById('detailModal');if(d)d.remove();render();if(d)openChallenge(currentId)}
+function openWeek(id){currentId=id;mood=0;['weekGood','weekHard','weekLearn'].forEach(x=>document.getElementById(x).value='');document.getElementById('weekPhotos').value='';document.getElementById('weekPhotoPreview').innerHTML='';document.querySelectorAll('#moodPicker button').forEach(b=>b.classList.remove('selected'));weekPhotoData=[];document.getElementById('weekModal').classList.add('open')}
+function setMood(n){mood=n;document.querySelectorAll('#moodPicker button').forEach((b,i)=>b.classList.toggle('selected',i===n-1))}
+document.getElementById('weekPhotos').addEventListener('change',e=>readFiles(e.target.files,3,arr=>{weekPhotoData=arr;document.getElementById('weekPhotoPreview').innerHTML=arr.map(p=>`<img src="${p}">`).join('')}));
+function saveWeek(){let c=getC(currentId);c.weeks.push({date:todayISO(),good:document.getElementById('weekGood').value.trim(),hard:document.getElementById('weekHard').value.trim(),learn:document.getElementById('weekLearn').value.trim(),mood,photos:weekPhotoData});save();closeModal('weekModal');render();showScreen('journal')}
+function openFinish(id){currentId=id;document.getElementById('finishNote').value='';document.getElementById('finishModal').classList.add('open')}
+function finishChallenge(){let c=getC(currentId);c.status='finished';c.finishNote=document.getElementById('finishNote').value.trim();c.finishedAt=todayISO();save();closeModal('finishModal');let d=document.getElementById('detailModal');if(d)d.remove();render();showScreen('stats')}
+if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
+render();
+</script>
+</body></html>
