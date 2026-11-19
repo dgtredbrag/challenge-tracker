@@ -167,6 +167,28 @@ if ('serviceWorker' in navigator) {
     }
   });
 }
+  function exportBackup() {
+  const backup = {
+    app: 'Шаг за шагом',
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    data: data
+  };
+
+  const blob = new Blob(
+    [JSON.stringify(backup, null, 2)],
+    { type: 'application/json' }
+  );
+
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+
+  link.href = url;
+  link.download = 'step-by-step-backup-' + todayISO() + '.json';
+  link.click();
+
+  URL.revokeObjectURL(url);
+  }
 render();
 </script>
 </body></html>
