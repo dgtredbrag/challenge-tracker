@@ -1,8 +1,9 @@
 
 {
+  "id": "./",
   "name": "Шаг за шагом — челлендж-трекер",
   "short_name": "Шаг за шагом",
-  "start_url": "./index.html",
+  "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "background_color": "#f5f3ec",
