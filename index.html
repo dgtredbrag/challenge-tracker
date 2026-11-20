@@ -153,6 +153,93 @@ const supabaseClient = window.supabase.createClient(
   .then(({ error }) => {
     console.log('Проверка Supabase:', error || 'Подключение работает');
   });
+let authMode = 'login';
+
+document.querySelector('.app').style.display = 'none';
+document.querySelector('.bottom').style.display = 'none';
+document.getElementById('authScreen').style.display = 'flex';
+
+function setAuthMode(mode) {
+  authMode = mode;
+
+  document.getElementById('authTitle').textContent =
+    mode === 'login' ? 'С возвращением!' : 'Создадим аккаунт';
+
+  document.getElementById('authDescription').textContent =
+    mode === 'login'
+      ? 'Войди, чтобы продолжить свой путь.'
+      : 'Зарегистрируйся, чтобы сохранить свой путь.';
+
+  document.getElementById('authSubmit').textContent =
+    mode === 'login' ? 'Войти' : 'Зарегистрироваться';
+
+  document.getElementById('authSwitchText').textContent =
+    mode === 'login' ? 'Нет аккаунта?' : 'Уже есть аккаунт?';
+
+  document.getElementById('authSwitch').textContent =
+    mode === 'login' ? 'Зарегистрироваться' : 'Войти';
+
+  document.getElementById('authMessage').textContent = '';
+}
+
+document.getElementById('authSwitch').onclick = () => {
+  setAuthMode(authMode === 'login' ? 'signup' : 'login');
+};
+
+document.getElementById('authSubmit').onclick = async () => {
+  const email = document.getElementById('authEmail').value.trim();
+  const password = document.getElementById('authPassword').value;
+  const message = document.getElementById('authMessage');
+
+  if (!email || !password) {
+    message.textContent = 'Заполни электронную почту и пароль.';
+    return;
+  }
+
+  if (password.length < 6) {
+    message.textContent = 'Пароль должен содержать не менее 6 символов.';
+    return;
+  }
+
+  message.textContent = 'Подожди немного...';
+
+  try {
+    const result = authMode === 'signup'
+      ? await supabaseClient.auth.signUp({ email, password })
+      : await supabaseClient.auth.signInWithPassword({ email, password });
+
+    if (result.error) throw result.error;
+
+    message.textContent = authMode === 'signup'
+      ? 'Аккаунт создан! Проверь почту, если требуется подтверждение.'
+      : 'Вход выполнен! Следующим шагом подготовим перенос твоих данных.';
+  } catch (error) {
+    message.textContent = error.message;
+  }
+};
+
+document.getElementById('googleLogin').onclick = async () => {
+  const message = document.getElementById('authMessage');
+  message.textContent = 'Подключаем Google...';
+
+  const { error } = await supabaseClient.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      redirectTo: 'https://dgtredbrag.github.io/challenge-tracker/'
+    }
+  });
+
+  if (error) message.textContent = error.message;
+};
+
+supabaseClient.auth.getSession().then(({ data, error }) => {
+  if (error) {
+    document.getElementById('authMessage').textContent = error.message;
+  } else if (data.session) {
+    document.getElementById('authMessage').textContent =
+      'Ты уже вошел в аккаунт. Следующий шаг — перенос данных.';
+  }
+});
 const KEY='stepByStepChallengesV1';
 let data=JSON.parse(localStorage.getItem(KEY)||'{"challenges":[]}'), currentId=null,currentDay=null,challengeType='do',dayStatus=true,mood=0,dayPhotoData=null,weekPhotoData=[];
 const todayISO=()=>{let d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`};
