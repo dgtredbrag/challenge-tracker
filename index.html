@@ -232,23 +232,103 @@ document.getElementById('googleLogin').onclick = async () => {
   if (error) message.textContent = error.message;
 };
 
-function updateAuthScreen(session) {
+let handlingUserId = null;
+let handledUserId = null;
+
+async function updateAuthScreen(session) {
   const auth = document.getElementById('authScreen');
   const app = document.querySelector('.app');
   const bottom = document.querySelector('.bottom');
+  const message = document.getElementById('authMessage');
 
   auth.style.display = 'flex';
   app.style.display = 'none';
   bottom.style.display = 'none';
 
-  if (session) {
-    document.getElementById('authMessage').textContent =
-      'Вход выполнен! Сейчас подготовим перенос твоих данных.';
+  cloudReady = false;
+
+  if (!session) {
+    activeUserId = null;
+    handledUserId = null;
+    handlingUserId = null;
+    return;
+  }
+
+  const userId = session.user.id;
+
+  if (handlingUserId === userId || handledUserId === userId) return;
+
+  handlingUserId = userId;
+  message.textContent = 'Проверяем твои данные...';
+
+  try {
+    activeUserId = userId;
+
+    const localData = JSON.parse(
+      localStorage.getItem(KEY) || '{"challenges":[]}'
+    );
+
+    const hasLocalData =
+      Array.isArray(localData.challenges) &&
+      localData.challenges.length > 0;
+
+    if (hasLocalData) {
+      localStorage.setItem(
+        'stepByStepLocalBackupBeforeCloud',
+        JSON.stringify(localData)
+      );
+    }
+
+const cloudData = await getCloudData(userId);
+
+if (cloudData !== null) {
+  data = cloudData;
+} else {
+  const previousOwner = localStorage.getItem('stepByStepCloudOwner');
+  const canImportLocalData = !previousOwner || previousOwner === userId;
+
+  if (hasLocalData && canImportLocalData) {
+    const transfer = confirm(
+      'На телефоне найдены твои челленджи. Перенести их в облако?'
+    );
+
+    if (!transfer) {
+      message.textContent =
+        'Перенос отменён. Твои данные сохранены на телефоне. Обнови страницу, когда будешь готова.';
+      handlingUserId = null;
+      return;
+    }
+
+    data = localData;
+  } else {
+    data = { challenges: [] };
+  }
+
+  await createCloudData(userId, data);
+}
+
+localStorage.setItem(KEY, JSON.stringify(data));
+localStorage.setItem('stepByStepCloudOwner', userId);
+
+cloudReady = true;
+handledUserId = userId;
+handlingUserId = null;
+
+auth.style.display = 'none';
+app.style.display = '';
+bottom.style.display = '';
+
+render();
+
+  } catch (error) {
+    handlingUserId = null;
+    cloudReady = false;
+    message.textContent = 'Ошибка загрузки данных: ' + error.message;
   }
 }
 
 supabaseClient.auth.onAuthStateChange((event, session) => {
-  updateAuthScreen(session);
+  Promise.resolve().then(() => updateAuthScreen(session));
 });
 
 supabaseClient.auth.getSession().then(({ data, error }) => {
@@ -260,10 +340,48 @@ supabaseClient.auth.getSession().then(({ data, error }) => {
 });
 const KEY='stepByStepChallengesV1';
 let data=JSON.parse(localStorage.getItem(KEY)||'{"challenges":[]}'), currentId=null,currentDay=null,challengeType='do',dayStatus=true,mood=0,dayPhotoData=null,weekPhotoData=[];
+let activeUserId = null;
+let cloudReady = false;
+async function getCloudData(userId) {
+  const { data: row, error } = await supabaseClient
+    .from('user_data')
+    .select('data')
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  if (error) throw error;
+
+  return row ? row.data : null;
+}
+async function createCloudData(userId, savedData) {
+  const { error } = await supabaseClient
+    .from('user_data')
+    .insert({
+      user_id: userId,
+      data: savedData
+    });
+
+  if (error) throw error;
+}
 const todayISO=()=>{let d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`};
 const dateAdd=(s,n)=>{let d=new Date(s+'T12:00:00');d.setDate(d.getDate()+n);return d.toISOString().slice(0,10)};
 const fmt=s=>new Date(s+'T12:00:00').toLocaleDateString('ru-RU',{day:'numeric',month:'short',year:'numeric'});
-const save=()=>localStorage.setItem(KEY,JSON.stringify(data));
+const save = () => {
+  localStorage.setItem(KEY, JSON.stringify(data));
+
+  if (cloudReady && activeUserId) {
+    supabaseClient
+      .from('user_data')
+      .upsert({
+        user_id: activeUserId,
+        data: data,
+        updated_at: new Date().toISOString()
+      })
+      .then(({ error }) => {
+        if (error) console.error('Ошибка облачного сохранения:', error);
+      });
+  }
+};
 const esc=s=>String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const getC=id=>data.challenges.find(c=>c.id===id);
 const daysDone=c=>Object.values(c.days||{}).filter(d=>d.status==='done').length;
