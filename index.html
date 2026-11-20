@@ -410,18 +410,16 @@ const percent=c=>Math.round(daysDone(c)/c.duration*100);
 function streak(c){let n=0;for(let i=elapsed(c)-1;i>=0;i--){let d=c.days[dateAdd(c.start,i)];if(d&&d.status==='done')n++;else if(i!==elapsed(c)-1)break;else break}return n}
 function setType(t){challengeType=t;document.querySelectorAll('[data-type]').forEach(b=>b.classList.toggle('selected',b.dataset.type===t))}
 function openProfile() {
-  const user = supabaseClient.auth.getUser();
-
-  user.then(({ data, error }) => {
+  supabaseClient.auth.getUser().then(({ data, error }) => {
     if (error) {
-      alert('Не удалось загрузить профиль');
+      alert('Не удалось загрузить профиль: ' + error.message);
       return;
     }
 
     document.getElementById('profileEmail').textContent =
       data.user?.email || 'Email не указан';
 
-    openModal('profileModal');
+    document.getElementById('profileModal').classList.add('open');
   });
 }
 function openCreate(){document.getElementById('createModal').classList.add('open')}
