@@ -74,7 +74,7 @@ h1{font-size:29px;line-height:1.15;letter-spacing:-1px;margin:14px 0 8px}h2{font
 <div class="app">
 <header>
   <div class="brand">шаг<span>.</span> за шагом</div>
-  <button class="avatar" title="Выйти из аккаунта" onclick="supabaseClient.auth.signOut()">↪</button>
+  <button class="avatar" title="Мой профиль" onclick="openProfile()">👤</button>
 </header>
 <div class="tabs">
 <button class="tab active" data-screen="today">Сегодня</button>
@@ -108,6 +108,24 @@ h1{font-size:29px;line-height:1.15;letter-spacing:-1px;margin:14px 0 8px}h2{font
 </div></nav>
 
 <div class="modal" id="createModal"><div class="sheet">
+<div class="modal" id="profileModal">
+  <div class="sheet">
+    <div class="sheet-head">
+      <h2>Мой профиль</h2>
+      <button class="close" onclick="closeModal('profileModal')">×</button>
+    </div>
+
+    <div class="field">
+      <label>Электронная почта</label>
+      <p id="profileEmail"></p>
+    </div>
+
+    <button class="btn" style="width:100%;margin-top:20px"
+      onclick="supabaseClient.auth.signOut()">
+      Выйти из аккаунта
+    </button>
+  </div>
+</div>
 <div class="sheet-head"><h2>Новый челлендж</h2><button class="close" onclick="closeModal('createModal')">×</button></div>
 <div class="field"><label>Какую цель выбираешь?</label><div class="choice"><button class="selected" data-type="do" onclick="setType('do')">✓ Делать действие</button><button data-type="avoid" onclick="setType('avoid')">↗ Не делать действие</button></div></div>
 <div class="field"><label>Опиши цель · до 200 символов</label><input id="goal" maxlength="200" placeholder="Например: гулять не менее 30 минут"></div>
@@ -391,6 +409,21 @@ const elapsed=c=>Math.max(0,Math.min(c.duration,Math.floor((new Date(todayISO()+
 const percent=c=>Math.round(daysDone(c)/c.duration*100);
 function streak(c){let n=0;for(let i=elapsed(c)-1;i>=0;i--){let d=c.days[dateAdd(c.start,i)];if(d&&d.status==='done')n++;else if(i!==elapsed(c)-1)break;else break}return n}
 function setType(t){challengeType=t;document.querySelectorAll('[data-type]').forEach(b=>b.classList.toggle('selected',b.dataset.type===t))}
+function openProfile() {
+  const user = supabaseClient.auth.getUser();
+
+  user.then(({ data, error }) => {
+    if (error) {
+      alert('Не удалось загрузить профиль');
+      return;
+    }
+
+    document.getElementById('profileEmail').textContent =
+      data.user?.email || 'Email не указан';
+
+    openModal('profileModal');
+  });
+}
 function openCreate(){document.getElementById('createModal').classList.add('open')}
 function closeModal(id){document.getElementById(id).classList.remove('open')}
 function createChallenge(){let goal=document.getElementById('goal').value.trim();if(!goal){alert('Добавь описание цели.');return}
