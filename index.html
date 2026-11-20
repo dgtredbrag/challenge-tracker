@@ -7,6 +7,13 @@
 <meta name="description" content="Челлендж-трекер — маленькие шаги к большим изменениям.">
 <link rel="manifest" href="manifest.webmanifest">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+const SUPABASE_URL = 'https://iabiesoeeejjhglusngk.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_UPiNqLGQfVluDCQG_Qjj8A_rWpE3vRu';
+
+const supabaseClient = window.supabase.createClient(
+  SUPABASE_URL,
+  SUPABASE_KEY
+);
 <title>Шаг за шагом</title>
 <style>
 :root{--bg:#f5f3ec;--paper:#fffefa;--ink:#27332d;--muted:#7c877e;--line:#e7e6dc;--green:#66866d;--green2:#e5eee4;--orange:#e9a45b;--red:#c97970;--shadow:0 8px 28px #29372b12}
