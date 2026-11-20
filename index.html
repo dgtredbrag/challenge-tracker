@@ -232,12 +232,30 @@ document.getElementById('googleLogin').onclick = async () => {
   if (error) message.textContent = error.message;
 };
 
+function updateAuthScreen(session) {
+  const auth = document.getElementById('authScreen');
+  const app = document.querySelector('.app');
+  const bottom = document.querySelector('.bottom');
+
+  auth.style.display = 'flex';
+  app.style.display = 'none';
+  bottom.style.display = 'none';
+
+  if (session) {
+    document.getElementById('authMessage').textContent =
+      'Вход выполнен! Сейчас подготовим перенос твоих данных.';
+  }
+}
+
+supabaseClient.auth.onAuthStateChange((event, session) => {
+  updateAuthScreen(session);
+});
+
 supabaseClient.auth.getSession().then(({ data, error }) => {
   if (error) {
     document.getElementById('authMessage').textContent = error.message;
-  } else if (data.session) {
-    document.getElementById('authMessage').textContent =
-      'Ты уже вошел в аккаунт. Следующий шаг — перенос данных.';
+  } else {
+    updateAuthScreen(data.session);
   }
 });
 const KEY='stepByStepChallengesV1';
