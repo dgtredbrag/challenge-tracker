@@ -1,5 +1,5 @@
 
-const CACHE_NAME = "step-by-step-v5";
+const CACHE_NAME = "step-by-step-v6";
 
 const APP_FILES = [
   "./",

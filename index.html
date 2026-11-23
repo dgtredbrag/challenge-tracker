@@ -167,19 +167,68 @@ h1{font-size:29px;line-height:1.15;letter-spacing:-1px;margin:14px 0 8px}h2{font
 <button class="btn" style="width:100%" onclick="finishChallenge()">Завершить челлендж</button>
 </div></div>
 <script>
+// Страховка от «белого экрана»: срабатывает, даже если основной скрипт упал.
+(function () {
+  function showFallback(text) {
+    try {
+      var auth = document.getElementById('authScreen');
+      var app = document.querySelector('.app');
+      var isBlank =
+        (!auth || getComputedStyle(auth).display === 'none') &&
+        (!app || getComputedStyle(app).display === 'none');
+      if (!auth || !isBlank) return;
+      auth.style.display = 'flex';
+      var message = document.getElementById('authMessage');
+      if (message) message.textContent = text;
+    } catch (error) {
+      // Ничего не остаётся, кроме как молчать.
+    }
+  }
+
+  window.addEventListener('error', function (event) {
+    var text = event && event.message
+      ? event.message
+      : (event && event.target && event.target.src
+          ? 'не загрузился скрипт ' + event.target.src
+          : 'неизвестная ошибка');
+    showFallback('Ошибка приложения: ' + text + '. Обновите страницу.');
+  }, true);
+
+  setTimeout(function () {
+    showFallback('Загрузка не завершилась. Проверьте интернет и обновите страницу.');
+  }, 8000);
+})();
+</script>
+<script>
 const SUPABASE_URL = 'https://iabiesoeeejjhglusngk.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_UPiNqLGQfVluDCQG_Qjj8A_rWpE3vRu';
+
+// Запоминаем параметры возврата из Google до того, как supabase их обработает.
+const initialHasAuthParams =
+  /[?&#](code|access_token|refresh_token|error|error_description)=/.test(
+    location.search + location.hash
+  );
+
+const initialAuthError = (() => {
+  try {
+    const hash = new URLSearchParams(location.hash.replace(/^#/, ''));
+    const query = new URLSearchParams(location.search);
+    return (
+      hash.get('error_description') ||
+      query.get('error_description') ||
+      hash.get('error') ||
+      query.get('error') ||
+      null
+    );
+  } catch (error) {
+    return null;
+  }
+})();
 
 const supabaseClient = window.supabase.createClient(
   SUPABASE_URL,
   SUPABASE_KEY 
 );
-  supabaseClient.from('user_data')
-  .select('user_id')
-  .limit(1)
-  .then(({ error }) => {
-    console.log('Проверка Supabase:', error || 'Подключение работает');
-  });
 let authMode = 'login';
 
 document.querySelector('.app').style.display = 'none';
@@ -248,14 +297,21 @@ document.getElementById('googleLogin').onclick = async () => {
   const message = document.getElementById('authMessage');
   message.textContent = 'Подключаем Google...';
 
-  const { error } = await supabaseClient.auth.signInWithOAuth({
-    provider: 'google',
-    options: {
-      redirectTo: 'https://dgtredbrag.github.io/challenge-tracker/'
-    }
-  });
+  try {
+    const { error } = await supabaseClient.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: 'https://dgtredbrag.github.io/challenge-tracker/'
+      }
+    });
 
-  if (error) message.textContent = error.message;
+    if (error) {
+      message.textContent = 'Ошибка входа через Google: ' + error.message;
+    }
+  } catch (error) {
+    message.textContent =
+      'Ошибка входа через Google: ' + (error.message || error);
+  }
 };
 
 let handlingUserId = null;
@@ -389,24 +445,88 @@ function cleanAuthUrl() {
   }
 }
 
+async function waitForSession(timeoutMs) {
+  const started = Date.now();
+
+  while (Date.now() - started < timeoutMs) {
+    try {
+      const { data } = await supabaseClient.auth.getSession();
+      if (data && data.session) return data.session;
+    } catch (error) {
+      // Ждём следующую попытку.
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 400));
+  }
+
+  return null;
+}
+
+let awaitingOAuthReturn = initialHasAuthParams;
+
 supabaseClient.auth.onAuthStateChange((event, session) => {
+  if (session) awaitingOAuthReturn = false;
+
+  // Пока идёт возврат из Google, пустые события не должны сбрасывать экран.
+  if (
+    awaitingOAuthReturn &&
+    !session &&
+    (event === 'INITIAL_SESSION' || event === 'SIGNED_OUT')
+  ) {
+    return;
+  }
+
   Promise.resolve().then(() => updateAuthScreen(session));
 });
 
-supabaseClient.auth
-  .getSession()
-  .then(({ data, error }) => {
-    if (error) {
-      showAuthError('Ошибка входа: ' + error.message);
+(async () => {
+  if (initialAuthError) {
+    awaitingOAuthReturn = false;
+    cleanAuthUrl();
+    showAuthError('Не удалось войти: ' + initialAuthError);
+    return;
+  }
+
+  if (initialHasAuthParams) {
+    showAuthError('Завершаем вход…');
+  }
+
+  const { data, error } = await supabaseClient.auth
+    .getSession()
+    .catch((e) => ({ data: null, error: e }));
+
+  if (error) {
+    showAuthError('Ошибка входа: ' + (error.message || error));
+    return;
+  }
+
+  if (data && data.session) {
+    awaitingOAuthReturn = false;
+    updateAuthScreen(data.session);
+    return;
+  }
+
+  if (initialHasAuthParams) {
+    const session = await waitForSession(8000);
+
+    if (session) {
+      awaitingOAuthReturn = false;
+      updateAuthScreen(session);
       return;
     }
-    return updateAuthScreen(data.session);
-  })
-  .catch((error) => {
+
+    awaitingOAuthReturn = false;
+    cleanAuthUrl();
     showAuthError(
-      'Ошибка входа: ' + (error && error.message ? error.message : error)
+      initialAuthError
+        ? 'Не удалось войти: ' + initialAuthError
+        : 'Не удалось завершить вход. Нажмите «Продолжить с Google» ещё раз.'
     );
-  });
+    return;
+  }
+
+  updateAuthScreen(null);
+})();
 
 // Возврат в приложение из браузера (вход через Google) — проверяем сессию заново.
 document.addEventListener('visibilitychange', () => {
@@ -496,9 +616,22 @@ function openProfile() {
       : (data.user?.email || 'Email не указан');
   });
 }
-function signOutUser() {
+async function signOutUser() {
   closeModal('profileModal');
-  supabaseClient.auth.signOut();
+
+  // Сразу показываем экран входа, не дожидаясь ответа сети.
+  showAuthError('Выходим…');
+
+  try {
+    // scope: 'local' — очищает сессию только на устройстве, без запроса к серверу.
+    // Обычный signOut() ждёт сеть и создаёт гонку со следующим входом.
+    await supabaseClient.auth.signOut({ scope: 'local' });
+  } catch (error) {
+    console.error('Ошибка выхода:', error);
+  }
+
+  updateAuthScreen(null);
+  document.getElementById('authMessage').textContent = '';
 }
 function openCreate(){document.getElementById('createModal').classList.add('open')}
 function closeModal(id){document.getElementById(id).classList.remove('open')}
