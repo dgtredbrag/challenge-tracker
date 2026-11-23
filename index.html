@@ -267,24 +267,30 @@ async function updateAuthScreen(session) {
   const bottom = document.querySelector('.bottom');
   const message = document.getElementById('authMessage');
 
-  auth.style.display = 'flex';
-  app.style.display = 'none';
-  bottom.style.display = 'none';
-
-  cloudReady = false;
-
   if (!session) {
     activeUserId = null;
     handledUserId = null;
     handlingUserId = null;
+    cloudReady = false;
+
+    auth.style.display = 'flex';
+    app.style.display = 'none';
+    bottom.style.display = 'none';
     return;
   }
 
   const userId = session.user.id;
 
+  // Повторный вызов для того же аккаунта (INITIAL_SESSION, TOKEN_REFRESHED и т.п.)
+  // не должен трогать интерфейс — иначе экран остаётся пустым.
   if (handlingUserId === userId || handledUserId === userId) return;
 
   handlingUserId = userId;
+  cloudReady = false;
+
+  auth.style.display = 'flex';
+  app.style.display = 'none';
+  bottom.style.display = 'none';
   message.textContent = 'Проверяем твои данные...';
 
   try {
@@ -336,6 +342,9 @@ if (cloudData !== null) {
 localStorage.setItem(KEY, JSON.stringify(data));
 localStorage.setItem('stepByStepCloudOwner', userId);
 
+// Пока шла загрузка, пользователь мог выйти из аккаунта.
+if (activeUserId !== userId) return;
+
 cloudReady = true;
 handledUserId = userId;
 handlingUserId = null;
@@ -344,6 +353,7 @@ auth.style.display = 'none';
 app.style.display = '';
 bottom.style.display = '';
 
+cleanAuthUrl();
 render();
 
   } catch (error) {
@@ -353,17 +363,77 @@ render();
   }
 }
 
+function showAuthError(text) {
+  const auth = document.getElementById('authScreen');
+  const app = document.querySelector('.app');
+  const bottom = document.querySelector('.bottom');
+  auth.style.display = 'flex';
+  app.style.display = 'none';
+  bottom.style.display = 'none';
+  document.getElementById('authMessage').textContent = text;
+}
+
+function reportFatal(text) {
+  const auth = document.getElementById('authScreen');
+  const app = document.querySelector('.app');
+  const blank =
+    getComputedStyle(auth).display === 'none' &&
+    getComputedStyle(app).display === 'none';
+  if (blank) showAuthError(text);
+}
+
+function cleanAuthUrl() {
+  const params = location.search + location.hash;
+  if (/[?&#](code|access_token|refresh_token|error|error_description)=/.test(params)) {
+    history.replaceState({}, document.title, location.pathname);
+  }
+}
+
 supabaseClient.auth.onAuthStateChange((event, session) => {
   Promise.resolve().then(() => updateAuthScreen(session));
 });
 
-supabaseClient.auth.getSession().then(({ data, error }) => {
-  if (error) {
-    document.getElementById('authMessage').textContent = error.message;
-  } else {
-    updateAuthScreen(data.session);
-  }
+supabaseClient.auth
+  .getSession()
+  .then(({ data, error }) => {
+    if (error) {
+      showAuthError('Ошибка входа: ' + error.message);
+      return;
+    }
+    return updateAuthScreen(data.session);
+  })
+  .catch((error) => {
+    showAuthError(
+      'Ошибка входа: ' + (error && error.message ? error.message : error)
+    );
+  });
+
+// Возврат в приложение из браузера (вход через Google) — проверяем сессию заново.
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState !== 'visible') return;
+  supabaseClient.auth
+    .getSession()
+    .then(({ data }) => {
+      if (data && data.session) updateAuthScreen(data.session);
+    })
+    .catch(() => {});
 });
+
+window.addEventListener('error', (e) => {
+  reportFatal('Ошибка приложения: ' + (e.message || 'неизвестная'));
+});
+
+window.addEventListener('unhandledrejection', (e) => {
+  const reason = e.reason;
+  reportFatal(
+    'Ошибка приложения: ' + (reason && reason.message ? reason.message : reason)
+  );
+});
+
+// Страховка: пустой экран не должен оставаться навсегда.
+setTimeout(() => {
+  reportFatal('Загрузка не завершилась. Проверьте интернет и обновите страницу.');
+}, 8000);
 const KEY='stepByStepChallengesV1';
 let data=JSON.parse(localStorage.getItem(KEY)||'{"challenges":[]}'), currentId=null,currentDay=null,challengeType='do',dayStatus=true,mood=0,dayPhotoData=null,weekPhotoData=[];
 let activeUserId = null;
